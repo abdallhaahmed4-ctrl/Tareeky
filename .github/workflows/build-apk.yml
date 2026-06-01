@@ -1,0 +1,49 @@
+name: Build Native Flutter APK from ZIP
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Unzip project
+        run: |
+          unzip -q tareeqy_flutter_native_mvp_github_actions.zip -d source_project
+          ls -la source_project
+
+      - name: Create Flutter Android project
+        run: |
+          flutter --version
+          flutter create tareeqy_native --platforms android
+          cp -r source_project/lib tareeqy_native/lib
+          cp source_project/pubspec.yaml tareeqy_native/pubspec.yaml
+
+      - name: Install dependencies
+        working-directory: tareeqy_native
+        run: flutter pub get
+
+      - name: Analyze project
+        working-directory: tareeqy_native
+        run: flutter analyze
+
+      - name: Build release APK
+        working-directory: tareeqy_native
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tareeqy-native-release-apk
+          path: tareeqy_native/build/app/outputs/flutter-apk/app-release.apk
